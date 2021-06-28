@@ -22,7 +22,7 @@ def send_msgs():
     global round_counter
     global msg_list
     with lock_msg:
-        for me in msg_list[:]:
+        for me in msg_list[:]: # copy the list in order to remove some items
             with lock_counter:
                 if int(me.round) == round_counter:
                     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -32,6 +32,7 @@ def send_msgs():
         round_counter += 1
     with lock_msg:
         if len(msg_list) != 0:
+            # open thred and send all messages every one minute
             Timer(60, send_msgs, args=()).start()
 
 
