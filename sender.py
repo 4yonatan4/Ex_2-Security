@@ -1,12 +1,39 @@
-import socket
 import sys
 import base64
+import threading
+from threading import Timer
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import socket
+
+
+class Message:
+    def __init__(self, data, round, ip, port):
+        self.data = data
+        self.round = round
+        self.ip = ip
+        self.port = port
+
+
+def send_msgs():
+    global round_counter
+    global msg_list
+    with lock_msg:
+        for me in msg_list[:]:
+            with lock_counter:
+                if int(me.round) == round_counter:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    s.sendto(me.data, (me.ip, me.port))
+                    s.close()
+                    msg_list.remove(me)
+        round_counter += 1
+    with lock_msg:
+        if len(msg_list) != 0:
+            Timer(60, send_msgs, args=()).start()
+
 
 def load_keys(file_name):
     with open(file_name, "rb") as f:
@@ -38,22 +65,26 @@ def encrypt(password, salt, mess):
     return token
 
 
+round_counter = 0
+msg_list = []
+lock_msg = threading.Lock()
+lock_counter = threading.Lock()
 if __name__ == '__main__':
     file_path = "messages" + sys.argv[1] + ".txt"
     f = open(file_path, "r")
+    round_counter = 0
     for line in f:
-        print(line)
         message = line.split()
         mes_len = len(message)
         destination_port = message[mes_len - 1]
         destination_ip = message[mes_len - 2]
         salt = message[mes_len - 3]
         key_password = message[mes_len - 4]
-        data = message[0]
+        data = message[:mes_len-6]
         round_number = message[mes_len - 5]
         path_mes = message[1:mes_len - 5]
         path_message = path_mes[0].split(",")
-        c = encrypt(key_password, salt, data)
+        c = encrypt(key_password, salt, data[0])
         msg = destination_ip + destination_port + str(c)
         b_msg = bytes(msg, 'utf-8')
         for i in reversed(path_message):
@@ -66,16 +97,15 @@ if __name__ == '__main__':
                     label=None
                 )
             )
-            print(ciphertext)
             ip_port = get_ip_port_from_file(i)
             ip_port_list = ip_port.split()
             b_ip = socket.inet_aton(ip_port_list[0])
             b_port = (int(ip_port_list[1])).to_bytes(2, 'big')
             b_msg = b_ip + b_port + ciphertext
+        with lock_msg:
+            msg_list.append(Message(b_msg, round_number, ip_port_list[0], int(ip_port_list[1])))
+    Timer(60, send_msgs, args=None).start()
+    while len(msg_list) == 0:
+        pass
 
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.sendto(b_msg, (ip_port_list[0], int(ip_port_list[1])))
-            # data, addr = s.recvfrom(1024)
-            # print(str(data), addr)
-            s.close()
 
