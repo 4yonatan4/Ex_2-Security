@@ -9,9 +9,16 @@ import random
 import time
 import threading
 import hashlib
-
+from threading import Lock
+from time import sleep
+from threading import Thread
+from cffi.cparser import lock
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
+
+# List for the messages from the clients
+msg_list = []
+mutex = Lock()
 
 
 def start_server(ip, port, sk):
@@ -19,25 +26,54 @@ def start_server(ip, port, sk):
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Bind the socket to the port
-    server_address = (ip, int(port))
+    server_address = (ip, 9000)
     sock.bind(server_address)
-
     while True:
         sock.listen()
         connection, client_address = sock.accept()
         try:
-
             while True:
                 data = connection.recv(4096)
                 if data:
-                    # Decrypt with SK and insert to the queue
-                    print("")
+                    # Decrypt with SK and insert to the list
+                    ip_port_msg = sk.decrypt(data)
+                    mutex.acquire()
+                    try:
+                        # Insert ip_port_msg to the list
+                        msg_list.append(ip_port_msg)
+                    finally:
+                        # Release the mutex
+                        mutex.release()
                 else:
                     # No more data
                     break
         finally:
             # Close connection
             connection.close()
+
+
+def send_messages():
+    while True:
+        # TODO lock the mutex
+        mutex.acquire()
+        try:
+            if len(msg_list) > 0:
+                for ip_port_msg in msg_list:
+                    # Parse the data: ip - 4 bytes, port - 2 bytes, msg - all the rest
+                    # maybe need to use: (num).to_bytes(2, 'big')
+                    ip = ip_port_msg[:4]
+                    port = ip_port_msg[4:6]
+                    msg = ip_port_msg[6:]
+                    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    # Send the msg to ip, port
+                    conn.connect = ((ip, port))
+                    conn.send(msg)
+        finally:
+            # Clear list
+            msg_list.clear()
+            # Release the mutex
+            mutex.release()
+            sleep(60)
 
 
 def ip_port_parser(Y):
@@ -74,4 +110,9 @@ if __name__ == "__main__":
     server_sk = load_key(file_name)
     # Load ip and port - load ips.txt and take both from the 'Y' line
     ip, port = ip_port_parser(Y)
+    # Open socket to send messages
+    # t = Thread(target=send_messages)
+    # t.daemon = True
+    # t.start()
+    print("after send messages")
     start_server(ip, port, server_sk)
