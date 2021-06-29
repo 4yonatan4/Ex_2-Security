@@ -22,17 +22,18 @@ def send_msgs():
     global round_counter
     global msg_list
     with lock_msg:
-        for me in msg_list[:]: # copy the list in order to remove some items
+        for me in msg_list[:]:  # copy the list in order to remove some items
             with lock_counter:
                 if int(me.round) == round_counter:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    s.sendto(me.data, (me.ip, me.port))
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((me.ip, me.port))
+                    s.sendall(me.data)
                     s.close()
                     msg_list.remove(me)
         round_counter += 1
     with lock_msg:
         if len(msg_list) != 0:
-            # open thred and send all messages every one minute
+            # open thread and send all messages every one minute
             Timer(60, send_msgs, args=()).start()
 
 
@@ -52,9 +53,9 @@ def get_ip_port_from_file(line_number):
 
 
 def encrypt(password, salt, mess):
-    bytes_pass = bytes(password, 'utf-8')
-    bytes_salt = bytes(salt, 'utf-8')
-    bytes_message = bytes(mess, 'utf-8')
+    bytes_pass = bytes(password, "utf-8")
+    bytes_salt = bytes(salt, "utf-8")
+    bytes_message = bytes(mess, "utf-8")
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
@@ -86,12 +87,14 @@ if __name__ == '__main__':
         path_mes = message[1:mes_len - 5]
         path_message = path_mes[0].split(",")
         c = encrypt(key_password, salt, data[0])
-        msg = destination_ip + destination_port + str(c)
-        b_msg = bytes(msg, 'utf-8')
+        destination_ip = socket.inet_aton(destination_ip)
+        destination_port = (int(destination_port)).to_bytes(2, 'big')
+        msg = destination_ip + destination_port + c
+        # b_msg = bytes(msg, 'utf-8')
         for i in reversed(path_message):
             public_key = load_keys("pk" + i + ".pem")
             ciphertext = public_key.encrypt(
-                b_msg,
+                msg,
                 padding.OAEP(
                     mgf=padding.MGF1(algorithm=hashes.SHA256()),
                     algorithm=hashes.SHA256(),
@@ -102,10 +105,10 @@ if __name__ == '__main__':
             ip_port_list = ip_port.split()
             b_ip = socket.inet_aton(ip_port_list[0])
             b_port = (int(ip_port_list[1])).to_bytes(2, 'big')
-            b_msg = b_ip + b_port + ciphertext
-        with lock_msg:
-            msg_list.append(Message(b_msg, round_number, ip_port_list[0], int(ip_port_list[1])))
-    Timer(60, send_msgs, args=None).start()
+            with lock_msg:
+                msg_list.append(Message(ciphertext, round_number, ip_port_list[0], int(ip_port_list[1])))
+            msg = b_ip + b_port + ciphertext
+    Timer(0, send_msgs, args=()).start()
     while len(msg_list) == 0:
         pass
 
