@@ -3,7 +3,6 @@ import base64
 import socket
 import sys
 from datetime import datetime
-
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes, kdf
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC

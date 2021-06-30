@@ -1,6 +1,5 @@
 # Shilo Leopold 304996937, Yonatan Gat 203625264
 
-# package: socket, os, date, random, threding
 
 import sys
 import socket
