@@ -1,2 +1,3 @@
-ddd 1 0 password password 127.0.0.1 5001
-ccc 1 1 password password 127.0.0.1 5001
+ddd 3,2,1 0 password password 127.0.0.1 5001
+aaa 3,2,1 0 password password 127.0.0.1 5001
+ccc 3,2,1 1 password password 127.0.0.1 5001

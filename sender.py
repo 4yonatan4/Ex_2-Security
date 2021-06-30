@@ -1,7 +1,10 @@
+# Shilo Leopold 304996937, Yonatan Gat 203625264
 import sys
 import base64
 import threading
 from threading import Timer
+from time import sleep
+
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
@@ -21,6 +24,7 @@ class Message:
 def send_msgs():
     global round_counter
     global msg_list
+    sleep(5)
     with lock_msg:
         for me in msg_list[:]:  # copy the list in order to remove some items
             with lock_counter:
@@ -28,6 +32,7 @@ def send_msgs():
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     s.connect((me.ip, me.port))
                     s.sendall(me.data)
+                    print(me.data)
                     s.close()
                     msg_list.remove(me)
         round_counter += 1
@@ -90,6 +95,9 @@ if __name__ == '__main__':
         destination_ip = socket.inet_aton(destination_ip)
         destination_port = (int(destination_port)).to_bytes(2, 'big')
         msg = destination_ip + destination_port + c
+        final_msg = ""
+        next_ip = ""
+        next_port = ""
         # b_msg = bytes(msg, 'utf-8')
         for i in reversed(path_message):
             public_key = load_keys("pk" + i + ".pem")
@@ -101,13 +109,17 @@ if __name__ == '__main__':
                     label=None
                 )
             )
+            final_msg = ciphertext
             ip_port = get_ip_port_from_file(i)
             ip_port_list = ip_port.split()
+            next_ip = ip_port_list[0]
+            next_port = ip_port_list[1]
             b_ip = socket.inet_aton(ip_port_list[0])
             b_port = (int(ip_port_list[1])).to_bytes(2, 'big')
-            with lock_msg:
-                msg_list.append(Message(ciphertext, round_number, ip_port_list[0], int(ip_port_list[1])))
             msg = b_ip + b_port + ciphertext
+        with lock_msg:
+            msg_list.append(Message(final_msg, round_number, next_ip, int(next_port)))
+
     Timer(0, send_msgs, args=()).start()
     while len(msg_list) == 0:
         pass

@@ -2,23 +2,15 @@
 
 # package: socket, os, date, random, threding
 
-import os
 import sys
 import socket
-import random
-import time
-import threading
-import hashlib
 from threading import Lock
 from time import sleep
 from threading import Thread
-from cffi.cparser import lock
-from cryptography.hazmat.backends import default_backend
-from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 # List for the messages from the clients
 msg_list = []
@@ -31,7 +23,7 @@ def start_server(ip, port, sk):
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Bind the socket to the port
-    server_address = (ip, 9000)
+    server_address = (ip, int(port))
     sock.bind(server_address)
     sock.listen()
     print("server listen")
@@ -88,6 +80,7 @@ def send_messages():
                     # # Send the msg to ip, port
                     conn.connect((ip, port))
                     conn.send(msg)
+                    print(msg)
                 # Clear list
                 msg_list.clear()
         finally:

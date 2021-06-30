@@ -1,3 +1,4 @@
+# Shilo Leopold 304996937, Yonatan Gat 203625264
 import base64
 import socket
 import sys
@@ -16,30 +17,26 @@ def open_server(port, password, salt):
     rec.listen()
     while True:
         connection, client_address = rec.accept()
-        try:
-            while True:
-                data = ""
-                # While loop to get entire message
-                curr = connection.recv(1024)
-                data = curr
-                while len(curr) == 1024:
-                    curr = connection.recv(1024)
-                    data += curr
-                if data:
-                    kdf = PBKDF2HMAC(
-                        algorithm=hashes.SHA256(),
-                        length=32,
-                        salt=bytes_salt,
-                        iterations=100000, )
-                    key = base64.urlsafe_b64encode(kdf.derive(bytes_pass))
-                    f = Fernet(key)
-                    msg = f.decrypt(data)
-                    msg = msg.decode("utf-8")
-                    time = datetime.now().time()
-                    time = time.strftime("%H:%M:%S")
-                    print(msg + " " + time)
-        finally:
-            connection.close()
+        data = ""
+        # While loop to get entire message
+        curr = connection.recv(1024)
+        data = curr
+        while len(curr) == 1024:
+            curr = connection.recv(1024)
+            data += curr
+        if data:
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=bytes_salt,
+                iterations=100000, )
+            key = base64.urlsafe_b64encode(kdf.derive(bytes_pass))
+            f = Fernet(key)
+            msg = f.decrypt(data)
+            msg = msg.decode("utf-8")
+            time = datetime.now().time()
+            time = time.strftime("%H:%M:%S")
+            print(msg + " " + time)
 
 
 if __name__ == '__main__':
