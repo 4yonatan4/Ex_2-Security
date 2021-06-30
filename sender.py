@@ -32,7 +32,6 @@ def send_msgs():
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     s.connect((me.ip, me.port))
                     s.sendall(me.data)
-                    print(me.data)
                     s.close()
                     msg_list.remove(me)
         round_counter += 1

@@ -26,7 +26,6 @@ def start_server(ip, port, sk):
     server_address = (ip, int(port))
     sock.bind(server_address)
     sock.listen()
-    print("server listen")
     while True:
         connection, client_address = sock.accept()
         try:
@@ -67,7 +66,6 @@ def send_messages():
         try:
             if len(msg_list) > 0:
                 for ip_port_msg in msg_list:
-                    print(ip_port_msg)
                     # ip_port_msg = ip_port_msg.decode('UTF-8')
                     # Parse the data: ip - 4 bytes, port - 2 bytes, msg - all the rest
                     # maybe need to use: (num).to_bytes(2, 'big')
@@ -80,7 +78,6 @@ def send_messages():
                     # # Send the msg to ip, port
                     conn.connect((ip, port))
                     conn.send(msg)
-                    print(msg)
                 # Clear list
                 msg_list.clear()
         finally:
