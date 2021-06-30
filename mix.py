@@ -56,7 +56,7 @@ def start_server(ip, port, sk):
                     mutex.acquire()
                     try:
                         # Insert ip_port_msg to the list
-                        msg_list.append(data)
+                        msg_list.append(ip_port_msg)
                     finally:
                         # Release the mutex
                         mutex.release()
@@ -75,16 +75,19 @@ def send_messages():
         try:
             if len(msg_list) > 0:
                 for ip_port_msg in msg_list:
+                    print(ip_port_msg)
+                    # ip_port_msg = ip_port_msg.decode('UTF-8')
                     # Parse the data: ip - 4 bytes, port - 2 bytes, msg - all the rest
                     # maybe need to use: (num).to_bytes(2, 'big')
-                    print(ip_port_msg)
-                    # ip = ip_port_msg[:4]
-                    # port = ip_port_msg[4:6]
-                    # msg = ip_port_msg[6:]
-                    # conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    ip = ip_port_msg[:4]
+                    ip = socket.inet_ntoa(ip)
+                    port = ip_port_msg[4:6]
+                    port = int.from_bytes(port, "big")
+                    msg = ip_port_msg[6:]
+                    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     # # Send the msg to ip, port
-                    # conn.connect = ((ip, port))
-                    # conn.send(msg)
+                    conn.connect((ip, port))
+                    conn.send(msg)
                 # Clear list
                 msg_list.clear()
         finally:
