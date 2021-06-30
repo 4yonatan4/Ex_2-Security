@@ -1,6 +1,5 @@
 # Shilo Leopold 304996937, Yonatan Gat 203625264
-
-
+import random
 import sys
 import socket
 from threading import Lock
@@ -62,6 +61,7 @@ def send_messages():
     global msg_list
     while True:
         mutex.acquire()
+        random.shuffle(msg_list)
         try:
             if len(msg_list) > 0:
                 for ip_port_msg in msg_list:
